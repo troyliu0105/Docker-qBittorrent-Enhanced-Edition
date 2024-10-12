@@ -10,19 +10,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
       
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       # 获得仓库中的ReleaseTag
       - name: Set Version
@@ -51,11 +52,13 @@ jobs:
       # Build and push
       - name: Build and push
         if: steps.get-release-tag.outputs.status == 'success'
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v6
         with:
           file: ./Dockerfile
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            superng6/qbittorrentee:${{ steps.set-version.outputs.version }}
-            superng6/qbittorrentee:latest
+            ghcr.io/${{ github.repository_owner }}/qbittorrentee:${{ steps.set-version.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/qbittorrentee:latest
